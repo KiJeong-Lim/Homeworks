@@ -26,3 +26,14 @@ data NFA
         , nfa_delta :: Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState) -- transitions
         }
     deriving (Show)
+
+data DFA
+    = DFA
+        { dfa_Q0 :: !(ParserState) -- the initial state
+        , dfa_QF :: !(Map.Map ParserState ExitNumber) -- final states
+        , dfa_delta :: !(Map.Map (ParserState, MyChar) ParserState) -- transitions
+        }
+    deriving (Show)
+
+alphabets :: Set.Set Char
+alphabets = Set.fromList (['a' .. 'z'] ++ ['A' .. 'Z'] ++ " `~0123456789!@#$%^&*()-=_+[]\\{}|;\':\"\n,./<>?")
