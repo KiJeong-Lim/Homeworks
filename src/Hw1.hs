@@ -37,11 +37,11 @@ calcUnitedNFA = runIdentity . go where
             n = length regexes
         (branches, (q_next, delta)) <- flip runStateT (n + 1, Map.empty) $ sequence
             [ do
-                let qf = label
+                qf <- mkNewQ
                 (qi1, qf1) <- dispatch re
                 addTransition ((q0, Nothing), qi1)
                 addTransition ((qf1, Nothing), qf)
-                return (label, qf)
+                return (qf, label)
             | (label, re) <- zip [1, 2 .. n] regexes
             ]
         return $ NFA
