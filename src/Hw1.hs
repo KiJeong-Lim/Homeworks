@@ -7,8 +7,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import HwAux
 
-calcUnitedNFA :: [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
-calcUnitedNFA = runIdentity . go where
+calcUnitedNfa :: [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
+calcUnitedNfa = runIdentity . go where
     mkNewQ :: StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ParserState
     -- Get a new state of nfa:
     -- > q <- mkNewQ
@@ -92,8 +92,8 @@ calcUnitedNFA = runIdentity . go where
             , nfa_delta = delta
             }
 
-calcDFA :: NFA -> DFA
-calcDFA (NFA q0 qfs delta) = runIdentity result where
+mkDfaFromNfa :: NFA -> DFA
+mkDfaFromNfa (NFA q0 qfs delta) = runIdentity result where
     cl :: Set.Set ParserState -> Set.Set ParserState
     -- calculate epsilon-closure.
     cl qs = if qs == qs' then qs' else cl qs' where
