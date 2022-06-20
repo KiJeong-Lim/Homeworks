@@ -75,23 +75,9 @@ calcDFA (NFA q0 qfs delta) = runIdentity result where
         ]
     draw :: Map.Map (Set.Set ParserState) ParserState -> [((Set.Set ParserState, ParserState), MyChar)] -> StateT (Map.Map (ParserState, MyChar) ParserState) Identity (Map.Map (Set.Set ParserState) ParserState)
     draw mapping [] = return mapping
-    draw mapping (((qs, q'), ch) : items) = do
-        let ps = cl (nexts qs ch)
-        delta' <- get
-        case Map.lookup ps mapping of
-            Nothing -> do
-                let p' = Map.size mapping
-                put (Map.insert (q', ch) p' delta')
-                draw (Map.insert ps p' mapping) items
-            Just p' -> do
-                put (Map.insert (q', ch) p' delta')
-                draw mapping items
+    draw mapping (((qs, q'), ch) : items) = undefined {- impl this -}
     iter :: Map.Map (Set.Set ParserState) ParserState -> StateT (Map.Map (ParserState, MyChar) ParserState) Identity (Map.Map ParserState ExitNumber, Map.Map (Set.Set ParserState) ParserState)
-    iter mapping = do
-        mapping' <- draw mapping ((,) <$> Map.toList mapping <*> Set.toList alphabets)
-        if mapping == mapping'
-            then return (Map.fromList [ (p, label) | (q, label) <- Map.toList qfs, (qs, p) <- Map.toList mapping', q `Set.member` qs ], mapping')
-            else iter mapping'
+    iter mapping = undefined {- impl this -}
     result :: Identity DFA
     result = do
         let q0' = 0
