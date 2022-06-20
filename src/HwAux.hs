@@ -11,12 +11,12 @@ type ParserState = Int
 type ExitNumber = Int
 
 data Regex
-    = ReUnion Regex Regex -- `ReUnions re1 re2` = `re1` ∪ `re2`
+    = ReUnion Regex Regex  -- `ReUnions re1 re2` = `re1` ∪ `re2`
     | ReConcat Regex Regex -- `ReConcat re1 re2` = `re1` `re2`
-    | ReStar Regex -- `ReStar re1` = `re1`*
-    | ReChar MyChar -- `ReChar ch` = 'ch'
-    | ReEmpty -- `ReEmpty` = ∅
-    | ReNil -- `ReNil` = ""
+    | ReStar Regex         -- `ReStar re1`       = `re1`*
+    | ReChar MyChar        -- `ReChar ch`        = 'ch'
+    | ReEmpty              -- `ReEmpty`          = ∅
+    | ReNil                -- `ReNil`            = ""
     deriving (Show)
 
 data NFA

@@ -7,7 +7,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import HwAux
 
-calcUnitedNFA :: [Regex] -> NFA
+calcUnitedNFA :: [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
 calcUnitedNFA = runIdentity . go where
     mkNewQ :: StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ParserState
     mkNewQ = do
