@@ -1,3 +1,11 @@
+module Hw1 where
+
+import Control.Monad.Trans.State.Strict
+import Data.Functor.Identity
+import qualified Data.List as List
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import HwAux
 
 calcUnitedNFA :: [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
 calcUnitedNFA = runIdentity . go where
@@ -78,9 +86,9 @@ calcUnitedNFA = runIdentity . go where
                 return (qf, label)
             | (label, re) <- zip [1, 2 .. n] regexes
             ]
-        return $ NFA
-            { nfa_Q0 = q0
-            , nfa_QF = Map.fromList branches
+        return NFA
+            { nfa_q0 = q0
+            , nfa_qF = Map.fromList branches
             , nfa_delta = delta
             }
 
@@ -116,8 +124,8 @@ calcDFA (NFA q0 qfs delta) = runIdentity result where
     result = do
         let q0' = 0
         ((qfs', mapping'), delta') <- runStateT (iter (Map.singleton (cl (Set.singleton q0)) q0')) Map.empty
-        return $ DFA
-            { dfa_Q0 = q0'
-            , dfa_QF = qfs'
+        return DFA
+            { dfa_q0 = q0'
+            , dfa_qF = qfs'
             , dfa_delta = delta'
             }
