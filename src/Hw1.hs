@@ -81,8 +81,8 @@ calcUnitedNfa = runIdentity . go where
             [ do
                 qf <- mkNewQ
                 (qi1, qf1) <- construct re
-                addTransition ((q0, Nothing), qi1)
-                addTransition ((qf1, Nothing), qf)
+                epsilon q0 qi1
+                epsilon qf1 qf
                 return (qf, label)
             | (label, re) <- zip [1, 2 .. n] regexes
             ]
