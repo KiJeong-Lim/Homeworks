@@ -90,7 +90,7 @@ calcUnitedNfa = runIdentity . go where
         return (NFA { nfa_q0 = q0, nfa_qF = Map.fromList branches, nfa_delta = delta })
 
 mkDfaFromNfa :: NFA -> DFA
-mkDfaFromNfa (NFA q0 qfs delta) = runIdentity result where
+mkDfaFromNfa (NFA { nfa_q0 = q0, nfa_qF = qfs, nfa_delta = delta }) = runIdentity result where
     cl :: Set.Set ParserState -> Set.Set ParserState
     -- To calculate an epsilon-closure.
     cl qs = if qs == qs' then qs' else cl qs' where
