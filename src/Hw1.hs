@@ -1,6 +1,7 @@
 module Hw1 where
 
 import Control.Monad.Trans.State.Strict
+import Data.Function
 import Data.Functor.Identity
 import qualified Data.List as List
 import qualified Data.Map.Strict as Map
@@ -86,21 +87,17 @@ calcUnitedNfa = runIdentity . go where
                 return (qf, label)
             | (label, re) <- zip [1, 2 .. n] regexes
             ]
-        return NFA
-            { nfa_q0 = q0
-            , nfa_qF = Map.fromList branches
-            , nfa_delta = delta
-            }
+        return (NFA { nfa_q0 = q0, nfa_qF = Map.fromList branches, nfa_delta = delta })
 
 mkDfaFromNfa :: NFA -> DFA
 mkDfaFromNfa (NFA q0 qfs delta) = runIdentity result where
     cl :: Set.Set ParserState -> Set.Set ParserState
-    -- calculate epsilon-closure.
+    -- To calculate an epsilon-closure.
     cl qs = if qs == qs' then qs' else cl qs' where
         qs' :: Set.Set ParserState
-        qs' = foldr Set.union qs [ maybe Set.empty id $ (q, Nothing) `Map.lookup` delta | q <- Set.toList qs ]
+        qs' = List.foldl' Set.union qs [ (q, Nothing) `Map.lookup` delta & maybe Set.empty id | q <- Set.toList qs ]
     nexts :: Set.Set ParserState -> MyChar -> Set.Set ParserState
-    nexts qs ch = Set.unions [ maybe Set.empty id $ Map.lookup (q, Just ch) delta | q <- Set.toList qs ]
+    nexts qs ch = Set.unions [ (q, Just ch) `Map.lookup` delta & maybe Set.empty id | q <- Set.toList qs ]
     draw :: Map.Map (Set.Set ParserState) ParserState -> [((Set.Set ParserState, ParserState), MyChar)] -> StateT (Map.Map (ParserState, MyChar) ParserState) Identity (Map.Map (Set.Set ParserState) ParserState)
     draw mapping [] = return mapping
     draw mapping (((qs, q), ch) : items) = do
@@ -124,8 +121,4 @@ mkDfaFromNfa (NFA q0 qfs delta) = runIdentity result where
     result = do
         let q0' = 0
         ((qfs', mapping'), delta') <- runStateT (iter (Map.singleton (cl (Set.singleton q0)) q0')) Map.empty
-        return DFA
-            { dfa_q0 = q0'
-            , dfa_qF = qfs'
-            , dfa_delta = delta'
-            }
+        return (DFA { dfa_q0 = q0', dfa_qF = qfs', dfa_delta = delta' })
