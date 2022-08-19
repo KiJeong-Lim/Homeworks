@@ -92,8 +92,7 @@ calcUnitedNfa = runIdentity . go where
 
 mkDfaFromNfa :: NFA -> DFA
 mkDfaFromNfa (NFA { nfa_q0 = q0, nfa_qfs = qfs, nfa_delta = delta }) = runIdentity result where
-    cl :: Set.Set ParserState -> Set.Set ParserState
-    -- To calculate an epsilon-closure.
+    cl :: Set.Set ParserState -> Set.Set ParserState -- calculates an epsilon-closure.
     cl qs = if qs == qs' then qs' else cl qs' where
         qs' :: Set.Set ParserState
         qs' = List.foldl' Set.union qs [ (q, Nothing) `Map.lookup` delta & maybe Set.empty id | q <- Set.toList qs ]
@@ -155,7 +154,7 @@ minimizeDFA (DFA { dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result whe
                     stack' :: [Set.Set ParserState]
                     stack' = case klass `List.elemIndex` stack of
                         Nothing -> if Set.size myintersection <= Set.size mydifference then myintersection : stack else mydifference : stack
-                        Just idx -> [myintersection, mydifference] ++ take idx stack ++ drop (idx + 1) stack
+                        Just idx -> take idx stack ++ [myintersection, mydifference] ++ drop (idx + 1) stack
     convert :: ParserState -> ParserState
     convert q = head [ q' | (q', qs) <- zip [0, 1 .. ] finalKlasses, q `Set.member` qs ]
     result :: DFA
