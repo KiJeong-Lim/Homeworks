@@ -21,16 +21,16 @@ data Regex
 
 data NFA
     = NFA
-        { nfa_q0 :: ParserState -- the initial state
-        , nfa_qF :: Map.Map ParserState ExitNumber -- final states
+        { nfa_q0 :: ParserState -- initial state
+        , nfa_qfs :: Map.Map ParserState ExitNumber -- final states
         , nfa_delta :: Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState) -- transitions
         }
     deriving (Show)
 
 data DFA
     = DFA
-        { dfa_q0 :: !(ParserState) -- the initial state
-        , dfa_qF :: !(Map.Map ParserState ExitNumber) -- final states
+        { dfa_q0 :: !(ParserState) -- initial state
+        , dfa_qfs :: !(Map.Map ParserState ExitNumber) -- final states
         , dfa_delta :: !(Map.Map (ParserState, MyChar) ParserState) -- transitions
         }
     deriving (Show)

@@ -1,5 +1,6 @@
 module Hw1 where
 
+import Control.Monad
 import Control.Monad.Trans.State.Strict
 import Data.Function
 import Data.Functor.Identity
@@ -87,10 +88,10 @@ calcUnitedNfa = runIdentity . go where
                 return (qf, label)
             | (label, re) <- zip [1, 2 .. n] regexes
             ]
-        return (NFA { nfa_q0 = q0, nfa_qF = Map.fromList branches, nfa_delta = delta })
+        return (NFA { nfa_q0 = q0, nfa_qfs = Map.fromList branches, nfa_delta = delta })
 
 mkDfaFromNfa :: NFA -> DFA
-mkDfaFromNfa (NFA { nfa_q0 = q0, nfa_qF = qfs, nfa_delta = delta }) = runIdentity result where
+mkDfaFromNfa (NFA { nfa_q0 = q0, nfa_qfs = qfs, nfa_delta = delta }) = runIdentity result where
     cl :: Set.Set ParserState -> Set.Set ParserState
     -- To calculate an epsilon-closure.
     cl qs = if qs == qs' then qs' else cl qs' where
@@ -121,4 +122,45 @@ mkDfaFromNfa (NFA { nfa_q0 = q0, nfa_qF = qfs, nfa_delta = delta }) = runIdentit
     result = do
         let q0' = 0
         ((qfs', mapping'), delta') <- runStateT (iter (Map.singleton (cl (Set.singleton q0)) q0')) Map.empty
-        return (DFA { dfa_q0 = q0', dfa_qF = qfs', dfa_delta = delta' })
+        return (DFA { dfa_q0 = q0', dfa_qfs = qfs', dfa_delta = delta' })
+
+minimizeDFA :: DFA -> DFA
+minimizeDFA (DFA { dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
+    allStates :: Set.Set ParserState
+    allStates = (Map.keysSet delta & Set.map fst) `Set.union` (Map.elems delta & Set.fromList)
+    initialKlasses :: [Set.Set ParserState]
+    initialKlasses = ((allStates `Set.difference` Map.keysSet qfs) : Map.elems (Map.toList qfs & foldr loop1 Map.empty)) & filter (not . Set.null) where
+        loop1 :: (ParserState, ExitNumber) -> Map.Map ExitNumber (Set.Set ParserState) -> Map.Map ExitNumber (Set.Set ParserState)
+        loop1 (qf, label) = Map.alter (Just . maybe (Set.singleton qf) (Set.insert qf)) label
+    finalKlasses :: [Set.Set ParserState]
+    finalKlasses = splitKlasses initialKlasses initialKlasses where
+        splitKlasses :: [Set.Set ParserState] -> [Set.Set ParserState] -> [Set.Set ParserState]
+        splitKlasses result stack
+            | null stack = result
+            | otherwise = uncurry splitKlasses (Set.foldr (uncurry . loop2 (head stack)) (result, tail stack) alphabets)
+        loop2 :: Set.Set ParserState -> Char -> [Set.Set ParserState] -> [Set.Set ParserState] -> ([Set.Set ParserState], [Set.Set ParserState])
+        loop2 top ch = foldr (>=>) return . map loop3 where
+            focused :: Set.Set ParserState
+            focused = Set.filter (\q -> maybe False (\p -> p `Set.member` top) ((q, ch) `Map.lookup` delta)) allStates
+            loop3 :: Set.Set ParserState -> [Set.Set ParserState] -> ([Set.Set ParserState], [Set.Set ParserState])
+            loop3 klass stack
+                | Set.null myintersection = ([klass], stack)
+                | Set.null mydifference = ([klass], stack)
+                | otherwise = ([myintersection, mydifference], stack')
+                where
+                    myintersection :: Set.Set ParserState
+                    myintersection = klass `Set.intersection` focused
+                    mydifference :: Set.Set ParserState
+                    mydifference = klass `Set.difference` focused
+                    stack' :: [Set.Set ParserState]
+                    stack' = case klass `List.elemIndex` stack of
+                        Nothing -> if Set.size myintersection <= Set.size mydifference then myintersection : stack else mydifference : stack
+                        Just idx -> [myintersection, mydifference] ++ take idx stack ++ drop (idx + 1) stack
+    convert :: ParserState -> ParserState
+    convert q = head [ q' | (q', qs) <- zip [0, 1 .. ] finalKlasses, q `Set.member` qs ]
+    result :: DFA
+    result = DFA 
+        { dfa_q0 = convert q0
+        , dfa_qfs = Map.fromList [ (convert qf, label) | (qf, label) <- Map.toList qfs ]
+        , dfa_delta = Map.fromList [ ((convert q, ch), convert p) | ((q, ch), p) <- Map.toList delta ]
+        }
