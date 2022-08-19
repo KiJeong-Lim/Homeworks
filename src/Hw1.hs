@@ -164,3 +164,21 @@ minimizeDFA (DFA { dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result whe
         , dfa_qfs = Map.fromList [ (convert qf, label) | (qf, label) <- Map.toList qfs ]
         , dfa_delta = Map.fromList [ ((convert q, ch), convert p) | ((q, ch), p) <- Map.toList delta ]
         }
+
+deleteDeadStates :: DFA -> DFA -- returns a partial DFA.
+deleteDeadStates (DFA { dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
+    edges :: Map.Map ParserState (Set.Set ParserState)
+    edges = [ (q, p) | ((q, ch), p) <- Map.toList delta ] & foldr loop1 Map.empty where
+        loop1 :: (ParserState, ParserState) -> Map.Map ParserState (Set.Set ParserState) -> Map.Map ParserState (Set.Set ParserState)
+        loop1 (q, p) = Map.alter (Just . maybe (Set.singleton q) (Set.insert q)) p
+    winners :: Set.Set ParserState
+    winners = Set.toList (Map.keysSet qfs) & loop2 Set.empty where
+        loop2 :: Set.Set ParserState -> [ParserState] -> Set.Set ParserState
+        loop2 ps [] = ps
+        loop2 ps (q : qs) = if q `Set.member` ps then loop2 ps qs else loop2 (Set.insert q ps) ((q `Map.lookup` edges & maybe [] Set.toAscList) ++ qs)
+    result :: DFA
+    result = DFA
+        { dfa_q0 = q0
+        , dfa_qfs = qfs
+        , dfa_delta = Map.fromAscList [ ((q, ch), p) | ((q, ch), p) <- Map.toAscList delta, q `Set.member` winners, p `Set.member` winners ]
+        }
