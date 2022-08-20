@@ -9,6 +9,8 @@
 Regexes:
   1. "fun"
   2. ['a'-'z']*
-Input: "fun"
-Output: (1, "fun")
+Input1: "fun"
+Output1: (1, "fun")
+Input2: "func"
+Output2: (2, "func")
 ```
