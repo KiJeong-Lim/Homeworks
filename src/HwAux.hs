@@ -21,7 +21,8 @@ data Regex
 
 data NFA
     = NFA
-        { nfa_q0 :: ParserState -- initial state
+        { nfa_alphabets :: Set.Set Char -- alphabets
+        , nfa_q0 :: ParserState -- initial state
         , nfa_qfs :: Map.Map ParserState ExitNumber -- final states
         , nfa_delta :: Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState) -- transitions
         }
@@ -29,11 +30,12 @@ data NFA
 
 data DFA
     = DFA
-        { dfa_q0 :: !(ParserState) -- initial state
+        { dfa_alphabets :: !(Set.Set Char) -- alphabets
+        , dfa_q0 :: !(ParserState) -- initial state
         , dfa_qfs :: !(Map.Map ParserState ExitNumber) -- final states
         , dfa_delta :: !(Map.Map (ParserState, MyChar) ParserState) -- transitions
         }
     deriving (Show)
 
-alphabets :: Set.Set Char
-alphabets = Set.fromList (['a' .. 'z'] ++ ['A' .. 'Z'] ++ " `~0123456789!@#$%^&*()-=_+[]\\{}|;\':\"\n,./<>?")
+collectTransititions :: (Ord a, Ord b) => [(a, b)] -> Map.Map a (Set.Set b)
+collectTransititions = List.foldl' (\acc -> uncurry $ \a -> \b -> Map.alter (Just . maybe (Set.singleton b) (Set.insert b)) a acc) Map.empty
