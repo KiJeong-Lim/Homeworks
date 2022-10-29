@@ -12,5 +12,5 @@ executable main
     , containers >= 0.6
     , transformers >= 0.5
   other-modules:
-    Dfa
-    DfaAux
+    Lex.FiniteAutomaton
+    Lex.FiniteAutomatonAux

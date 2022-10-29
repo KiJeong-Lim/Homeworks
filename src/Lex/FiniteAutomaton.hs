@@ -1,4 +1,4 @@
-module Dfa where
+module Lex.FiniteAutomaton where
 
 import Control.Monad
 import Control.Monad.Trans.State.Strict
@@ -7,7 +7,7 @@ import Data.Functor.Identity
 import qualified Data.List as List
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import DfaAux
+import Lex.FiniteAutomatonAux
 
 calcUnitedNfa :: Set.Set Char -> [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
 calcUnitedNfa alphabets = runIdentity . go where

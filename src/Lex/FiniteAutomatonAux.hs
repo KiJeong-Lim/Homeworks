@@ -1,4 +1,4 @@
-module DfaAux where
+module Lex.FiniteAutomatonAux where
 
 import qualified Data.List as List
 import qualified Data.Map.Strict as Map
