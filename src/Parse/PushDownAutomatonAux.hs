@@ -21,8 +21,8 @@ data Symbol
 
 data CFG
     = CFG
-        { cfg_V_N :: Set.Set Terminal
-        , cfg_V_T :: Set.Set Nonterminal
+        { cfg_V_N :: Set.Set Nonterminal
+        , cfg_V_T :: Set.Set Terminal
         , cfg_P :: [ProductionRule]
         , cfg_S :: Nonterminal
         }
