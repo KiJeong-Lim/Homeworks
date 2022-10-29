@@ -11,10 +11,10 @@ import Lex.FiniteAutomatonAux
 
 mkUnitedNfa :: Set.Set Char -> [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
 mkUnitedNfa alphabets = runIdentity . go where
-    mkNewQ :: StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ParserState
+    newState :: StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ParserState
     -- Get a new state of nfa:
-    -- > q <- mkNewQ
-    mkNewQ = do
+    -- > q <- newState
+    newState = do
         (q_next, delta) <- get
         let q_next' = succ q_next
         q_next' `seq` put (q_next', delta)
@@ -36,45 +36,45 @@ mkUnitedNfa alphabets = runIdentity . go where
     -- where `qi` is the initial state, and
     --       `qf` is the final state.
     construct (ReUnion re1 re2) = do
-        qi <- mkNewQ
+        qi <- newState
         (qi1, qf1) <- construct re1
         (qi2, qf2) <- construct re2
-        qf <- mkNewQ
+        qf <- newState
         epsilon qi qi1
         epsilon qi qi2
         epsilon qf1 qf
         epsilon qf2 qf
         return (qi, qf)
     construct (ReConcat re1 re2) = do
-        qi <- mkNewQ
+        qi <- newState
         (qi1, qf1) <- construct re1
         (qi2, qf2) <- construct re2
-        qf <- mkNewQ
+        qf <- newState
         epsilon qi qi1
         epsilon qf1 qi2
         epsilon qf2 qf
         return (qi, qf)
     construct (ReStar re1) = do
-        qi <- mkNewQ
+        qi <- newState
         (qi1, qf1) <- construct re1
-        qf <- mkNewQ
+        qf <- newState
         epsilon qf1 qi1
         epsilon qi qi1
         epsilon qf1 qf
         epsilon qi qf
         return (qi, qf)
     construct (ReChar ch) = do
-        qi <- mkNewQ
-        qf <- mkNewQ
+        qi <- newState
+        qf <- newState
         char qi ch qf
         return (qi, qf)
     construct (ReEmpty) = do
-        qi <- mkNewQ
-        qf <- mkNewQ
+        qi <- newState
+        qf <- newState
         return (qi, qf)
     construct (ReNil) = do
-        qi <- mkNewQ
-        qf <- mkNewQ
+        qi <- newState
+        qf <- newState
         epsilon qi qf
         return (qi, qf)
     go :: [Regex] -> Identity NFA
@@ -83,7 +83,7 @@ mkUnitedNfa alphabets = runIdentity . go where
             n = length regexes
         (branches, (q_next, delta)) <- flip runStateT (succ q0, Map.empty) $ sequence
             [ do
-                qf <- mkNewQ
+                qf <- newState
                 (qi1, qf1) <- construct re
                 epsilon q0 qi1
                 epsilon qf1 qf
