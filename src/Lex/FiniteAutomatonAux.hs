@@ -10,6 +10,10 @@ type ParserState = Int
 
 type ExitNumber = Int
 
+type NFA = GNFA ParserState
+
+type DFA = GDFA ParserState
+
 data Regex
     = ReUnion Regex Regex  -- `ReUnions re1 re2` = `re1` ∪ `re2`
     | ReConcat Regex Regex -- `ReConcat re1 re2` = `re1` `re2`
@@ -19,23 +23,23 @@ data Regex
     | ReNil                -- `ReNil`            = ""
     deriving (Show)
 
-data NFA
+data GNFA state
     = NFA
-        { nfa_states :: Set.Set ParserState -- states
+        { nfa_states :: Set.Set state -- states
         , nfa_alphabets :: Set.Set Char -- alphabets
-        , nfa_q0 :: ParserState -- initial state
-        , nfa_qfs :: Map.Map ParserState ExitNumber -- final states
-        , nfa_delta :: Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState) -- transitions
+        , nfa_q0 :: state -- initial state
+        , nfa_qfs :: Map.Map state ExitNumber -- final states
+        , nfa_delta :: Map.Map (state, Maybe MyChar) (Set.Set state) -- transitions
         }
     deriving (Show)
 
-data DFA
+data GDFA state
     = DFA
-        { dfa_states :: !(Set.Set ParserState)
+        { dfa_states :: !(Set.Set state) -- states
         , dfa_alphabets :: !(Set.Set Char) -- alphabets
-        , dfa_q0 :: !(ParserState) -- initial state
-        , dfa_qfs :: !(Map.Map ParserState ExitNumber) -- final states
-        , dfa_delta :: !(Map.Map (ParserState, MyChar) ParserState) -- transitions
+        , dfa_q0 :: !(state) -- initial state
+        , dfa_qfs :: !(Map.Map state ExitNumber) -- final states
+        , dfa_delta :: !(Map.Map (state, MyChar) state) -- transitions
         }
     deriving (Show)
 
