@@ -39,5 +39,5 @@ data DFA
         }
     deriving (Show)
 
-collectTransititions :: (Ord a, Ord b) => [(a, b)] -> Map.Map a (Set.Set b)
-collectTransititions = List.foldl' (\acc -> uncurry $ \a -> \b -> Map.alter (Just . maybe (Set.singleton b) (Set.insert b)) a acc) Map.empty
+mkGraph :: (Ord a, Ord b) => [(a, b)] -> Map.Map a (Set.Set b)
+mkGraph = List.foldl' (\acc -> uncurry $ \a -> \b -> Map.alter (Just . maybe (Set.singleton b) (Set.insert b)) a acc) Map.empty
