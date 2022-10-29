@@ -9,8 +9,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Lex.FiniteAutomatonAux
 
-calcUnitedNfa :: Set.Set Char -> [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
-calcUnitedNfa alphabets = runIdentity . go where
+mkUnitedNfa :: Set.Set Char -> [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
+mkUnitedNfa alphabets = runIdentity . go where
     mkNewQ :: StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ParserState
     -- Get a new state of nfa:
     -- > q <- mkNewQ
@@ -181,7 +181,7 @@ removeDeadStates (DFA { dfa_states = states, dfa_alphabets = alphabets, dfa_q0 =
         loop2 ps (q : qs) = if q `Set.member` ps then qs & loop2 ps else ((q `Map.lookup` edges & maybe [] Set.toAscList) ++ qs) & loop2 (Set.insert q ps)
     result :: DFA
     result = DFA
-        { dfa_states = winners
+        { dfa_states = Set.insert q0 winners
         , dfa_alphabets = alphabets
         , dfa_q0 = q0
         , dfa_qfs = qfs
