@@ -15,3 +15,4 @@ executable main
     Lex.FiniteAutomaton
     Lex.FiniteAutomatonAux
     Parse.PushDownAutomaton
+    Parse.PushDownAutomatonAux
