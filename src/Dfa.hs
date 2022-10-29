@@ -1,4 +1,4 @@
-module Hw1 where
+module Dfa where
 
 import Control.Monad
 import Control.Monad.Trans.State.Strict
@@ -7,7 +7,7 @@ import Data.Functor.Identity
 import qualified Data.List as List
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import HwAux
+import DfaAux
 
 calcUnitedNfa :: Set.Set Char -> [Regex] -> NFA -- Thompson's construction (See https://en.wikipedia.org/wiki/Thompson%27s_construction)
 calcUnitedNfa alphabets = runIdentity . go where
@@ -88,10 +88,12 @@ calcUnitedNfa alphabets = runIdentity . go where
                 return (qf, label)
             | (label, re) <- zip [1, 2 .. n] regexes
             ]
-        return (NFA { nfa_alphabets = alphabets, nfa_q0 = q0, nfa_qfs = Map.fromList branches, nfa_delta = delta })
+        let qfs = Map.fromList branches
+            states = Set.unions [Set.singleton q0, Map.keysSet qfs, Map.keysSet delta & Set.map fst, Map.elems delta & List.foldl' Set.union Set.empty]
+        return (NFA { nfa_states = states, nfa_alphabets = alphabets, nfa_q0 = q0, nfa_qfs = qfs, nfa_delta = delta })
 
 mkDfaFromNfa :: NFA -> DFA
-mkDfaFromNfa (NFA { nfa_alphabets = alphabets, nfa_q0 = q0, nfa_qfs = qfs, nfa_delta = delta }) = runIdentity result where
+mkDfaFromNfa (NFA { nfa_states = states, nfa_alphabets = alphabets, nfa_q0 = q0, nfa_qfs = qfs, nfa_delta = delta }) = runIdentity result where
     cl :: Set.Set ParserState -> Set.Set ParserState -- calculates an epsilon-closure.
     cl qs = if qs == qs' then qs' else cl qs' where
         qs' :: Set.Set ParserState
@@ -121,12 +123,11 @@ mkDfaFromNfa (NFA { nfa_alphabets = alphabets, nfa_q0 = q0, nfa_qfs = qfs, nfa_d
     result = do
         let q0' = 0
         ((qfs', mapping'), delta') <- runStateT (iter (Map.singleton (cl (Set.singleton q0)) q0')) Map.empty
-        return (DFA { dfa_alphabets = alphabets, dfa_q0 = q0', dfa_qfs = qfs', dfa_delta = delta' })
+        let states' = (Map.keysSet delta' & Set.map fst) `Set.union` (Map.elems delta' & Set.fromList)
+        return (DFA { dfa_states = states', dfa_alphabets = alphabets, dfa_q0 = q0', dfa_qfs = qfs', dfa_delta = delta' })
 
 minimizeDFA :: DFA -> DFA
-minimizeDFA (DFA { dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
-    allStates :: Set.Set ParserState
-    allStates = (Map.keysSet delta & Set.map fst) `Set.union` (Map.elems delta & Set.fromList)
+minimizeDFA (DFA { dfa_states = allStates, dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
     initialKlasses :: [Set.Set ParserState]
     initialKlasses = ((allStates `Set.difference` Map.keysSet qfs) : Map.elems (Map.toList qfs & foldr loop1 Map.empty)) & filter (not . Set.null) where
         loop1 :: (ParserState, ExitNumber) -> Map.Map ExitNumber (Set.Set ParserState) -> Map.Map ExitNumber (Set.Set ParserState)
@@ -158,15 +159,16 @@ minimizeDFA (DFA { dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, dfa_de
     convert :: ParserState -> ParserState
     convert q = head [ q' | (q', qs) <- zip [0, 1 .. ] finalKlasses, q `Set.member` qs ]
     result :: DFA
-    result = DFA 
-        { dfa_alphabets = alphabets
+    result = DFA
+        { dfa_states = Set.fromAscList [0 .. length finalKlasses - 1]
+        , dfa_alphabets = alphabets
         , dfa_q0 = convert q0
         , dfa_qfs = Map.fromList [ (convert qf, label) | (qf, label) <- Map.toList qfs ]
         , dfa_delta = Map.fromList [ ((convert q, ch), convert p) | ((q, ch), p) <- Map.toList delta ]
         }
 
 removeDeadStates :: DFA -> DFA -- returns a partial DFA.
-removeDeadStates (DFA { dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
+removeDeadStates (DFA { dfa_states = _, dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
     edges :: Map.Map ParserState (Set.Set ParserState)
     edges = [ (p, q) | ((q, ch), p) <- Map.toList delta ] & foldr loop1 Map.empty where
         loop1 :: (ParserState, ParserState) -> Map.Map ParserState (Set.Set ParserState) -> Map.Map ParserState (Set.Set ParserState)
@@ -178,7 +180,8 @@ removeDeadStates (DFA { dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, d
         loop2 ps (q : qs) = if q `Set.member` ps then qs & loop2 ps else ((q `Map.lookup` edges & maybe [] Set.toAscList) ++ qs) & loop2 (Set.insert q ps)
     result :: DFA
     result = DFA
-        { dfa_alphabets = alphabets
+        { dfa_states = winners
+        , dfa_alphabets = alphabets
         , dfa_q0 = q0
         , dfa_qfs = qfs
         , dfa_delta = Map.fromAscList [ ((q, ch), p) | ((q, ch), p) <- Map.toAscList delta, q `Set.member` winners, p `Set.member` winners ]
