@@ -22,7 +22,8 @@ mkUnitedNfa alphabets = runIdentity . go where
     addTransition :: ((ParserState, Maybe MyChar), ParserState) -> StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ()
     addTransition (key, q) = do
         (q_next, delta) <- get
-        put (q_next, Map.alter (Just . maybe (Set.singleton q) (Set.insert q)) key delta)
+        let delta' = Map.alter (Just . maybe (Set.singleton q) (Set.insert q)) key delta
+        delta' `seq` put (q_next, delta')
     epsilon :: ParserState -> ParserState -> StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ()
     -- To add an epsilon-transition from `qi` to `qf`:
     epsilon qi qf = addTransition ((qi, Nothing), qf)
