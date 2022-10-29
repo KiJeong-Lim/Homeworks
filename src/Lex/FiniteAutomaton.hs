@@ -16,7 +16,8 @@ calcUnitedNfa alphabets = runIdentity . go where
     -- > q <- mkNewQ
     mkNewQ = do
         (q_next, delta) <- get
-        put (succ q_next, delta)
+        let q_next' = succ q_next
+        q_next' `seq` put (q_next', delta)
         return q_next
     addTransition :: ((ParserState, Maybe MyChar), ParserState) -> StateT (ParserState, Map.Map (ParserState, Maybe MyChar) (Set.Set ParserState)) Identity ()
     addTransition (key, q) = do
@@ -89,7 +90,7 @@ calcUnitedNfa alphabets = runIdentity . go where
             | (label, re) <- zip [1, 2 .. n] regexes
             ]
         let qfs = Map.fromList branches
-            states = Set.unions [Set.singleton q0, Map.keysSet qfs, Map.keysSet delta & Set.map fst, Map.elems delta & List.foldl' Set.union Set.empty]
+            states = Set.fromAscList [0 .. q_next - 1]
         return (NFA { nfa_states = states, nfa_alphabets = alphabets, nfa_q0 = q0, nfa_qfs = qfs, nfa_delta = delta })
 
 mkDfaFromNfa :: NFA -> DFA
@@ -168,7 +169,7 @@ minimizeDFA (DFA { dfa_states = allStates, dfa_alphabets = alphabets, dfa_q0 = q
         }
 
 removeDeadStates :: DFA -> DFA -- returns a partial DFA.
-removeDeadStates (DFA { dfa_states = _, dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
+removeDeadStates (DFA { dfa_states = states, dfa_alphabets = alphabets, dfa_q0 = q0, dfa_qfs = qfs, dfa_delta = delta }) = result where
     edges :: Map.Map ParserState (Set.Set ParserState)
     edges = [ (p, q) | ((q, ch), p) <- Map.toList delta ] & foldr loop1 Map.empty where
         loop1 :: (ParserState, ParserState) -> Map.Map ParserState (Set.Set ParserState) -> Map.Map ParserState (Set.Set ParserState)
